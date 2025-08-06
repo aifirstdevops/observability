@@ -14,6 +14,8 @@ sudo mv prometheus-2.55.0.linux-amd64 prometheus
 
 sudo ./prometheus --config.file=prometheus.yml
 
+Configure grafana.repo in /etc/yum.repos.d/
+
 sudo yum install grafana -y
 
 sudo systemctl daemon-reload
