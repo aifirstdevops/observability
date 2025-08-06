@@ -29,4 +29,4 @@ scrape_configs:
       - targets: ["localhost:9090"]
   - job_name: 'python_app'
     static_configs:
-      - targets: ['52.14.74.116:8000']
+      - targets: ['<EC2 Instance>:8000']
