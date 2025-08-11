@@ -1,32 +1,65 @@
-# my global config
 global:
-  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
-  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
-  # scrape_timeout is set to the global default (10s).
+  scrape_interval: 15s
+  evaluation_interval: 15s
 
-# Alertmanager configuration
 alerting:
   alertmanagers:
     - static_configs:
-        - targets:
-          # - alertmanager:9093
+        - targets: []
+          # Example: ['alertmanager:9093']
 
-# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
-rule_files:
-  # - "first_rules.yml"
-  # - "second_rules.yml"
+rule_files: []
 
-# A scrape configuration containing exactly one endpoint to scrape:
-# Here it's Prometheus itself.
 scrape_configs:
-  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
   - job_name: "prometheus"
-
-    # metrics_path defaults to '/metrics'
-    # scheme defaults to 'http'.
-
     static_configs:
-      - targets: ["localhost:9090"]
+      - targets: ['localhost:9090']
+
   - job_name: 'python_app'
     static_configs:
-      - targets: ['<EC2 Instance>:8000']
+      - targets: ['18.217.193.129:8000']
+
+  - job_name: 'cloudwatch-exporter'
+    static_configs:
+      - targets: ['18.217.193.129:9106']
+        labels:
+          csp: 'aws'
+          cn: 'redica'
+          account_id: '660050638124'
+  - job_name: "node_exporter_ec2_public"
+    ec2_sd_configs:
+      - region: us-east-2            # <-- change if needed
+        port: 9100                   # node_exporter default port
+        refresh_interval: 60s
+        filters:
+          # tag the EC2s you want scraped; adjust as you like
+          - name: tag:Monitor
+            values: ['true','yes','1']
+    relabel_configs:
+      # drop instances without public IPs
+      - source_labels: [__meta_ec2_public_ip]
+        regex: ^$
+        action: drop
+
+      # set scrape address to <public_ip>:9100
+      - source_labels: [__meta_ec2_public_ip]
+        regex: (.+)
+        target_label: __address__
+        replacement: ${1}:9100
+        action: replace
+
+      # helpful labels for Grafana filtering
+      - source_labels: [__meta_ec2_instance_id]
+        target_label: instance_id
+      - source_labels: [__meta_ec2_tag_Name]
+        target_label: name
+      - source_labels: [__meta_ec2_availability_zone]
+        target_label: az
+
+      # keep familiar account/csp labels you were using
+      - target_label: csp
+        replacement: aws
+      - target_label: cn
+        replacement: redica
+      - target_label: account_id
+        replacement: '660050638124'
